@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog Post</title>
+  <link rel="stylesheet" href="bootstrap-5.0.2-dist/css/bootstrap.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="bootstrap-5.0.2-dist/js/bootstrap.bundle.js"></script>
+</head>
+<body>
+  <div class="box d-none" id="loader">
+    <div class="loader-01"></div>
+  </div>
+  <header>
+    <nav class="navbar navbar-expand-lg navbar-light bg-custom-secondary">
+      <div class="container-fluid">
+        <a class="navbar-brand text-white fw-bold text-uppercase" href="#">Blog Post App</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a class="nav-link" href="#">My Blogs</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" aria-current="page" href="#">Login</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+  <main>
+    <div class="container">
+      <div class="row my-5 d-none" id="blog_ui">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header bg-white">
+              <div class="text-end">
+                <button type="button" id="createBlog" class="btn btn-sm btn-custom-outline-primary">Create New Blog</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div id="blogsnote"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row my-5" id="create_form_ui">
+        <div class="col-12 col-md-6 offset-md-3">
+          <div class="card shadow-sm border-0">
+            <div class="card-header border-0">
+              <h5 class="text-custom-primary">Create Blog</h5>
+            </div>
+            <div class="card-body">
+              <form id="form_blog" onsubmit="submitBlog(event)">
+                <div class="row">
+                  <div class="col-12">
+                    <div class="mb-3">
+                      <label for="title" class="form-label text-custom-primary">Title</label>
+                      <input type="text" class="form-control" id="title">
+                    </div>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label for="content" class="form-label text-custom-primary">Content</label>
+                  <textarea class="form-control" id="content" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                  <label for="image" class="form-label text-custom-primary">Upload Image</label>
+                  <input class="form-control" type="file" id="image" accept=".jpg, .jpeg, .png">
+                </div>
+                <div class="text-end">
+                  <button type="button" id="cancel_post" class="btn btn-custom-secondary">Cancel</button>
+                  <button type="submit" class="btn btn-custom-primary">Save Blog</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- <div class="table-responsive">
+        <table class="table table-borderless table-hover">
+          <thead>
+            <th>Sr.No.</th>
+            <th></th>
+          </thead>
+        </table>
+      </div> -->
+    </div>
+  </main>
+  <footer>
+    <div class="py-2 bg-custom-secondary p-2 text-center">
+      <p class="mx-auto m-0 text-white">copyright@ makarand chikhale</p>
+    </div>
+  </footer>
+  <div class="modal fade" id="viewBlogs" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="viewtitle"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="viewImage"></div>
+          <p id="viewContent"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    // blogs variables
+    var blogsArr = [];
+    let form_blog = document.querySelector('#form_blog');
+    let loader = document.querySelector('#loader');
+
+    // form inputs variables
+    let title = document.querySelector('#title');
+    let content = document.querySelector('#content');
+    let image = document.querySelector('#image');
+    let isEdit = false;
+    let selectId = null;
+    // Edit blog
+
+    const editBlog = (index) => {
+      let blogs = sessionStorage.getItem('blogs');
+      let objBlogArr = JSON.parse(blogs);
+      const selectedBlog = objBlogArr.filter((item, i) => {
+        if(item.id === index){
+          return item;
+        }
+      });
+      title.value = selectedBlog[0].title;
+      content.value = selectedBlog[0].content;
+      image[0] = selectedBlog[0].image;
+      create_form_ui.classList.remove('d-none');
+      blog_ui.classList.add('d-none');
+      isEdit = true;
+      selectId = index;
+    }
+    // Delete blogs
+    const deleteBlog = (index) => {
+      let blogs = sessionStorage.getItem('blogs');
+      let objBlogArr = JSON.parse(blogs);
+      // console.log(objBlogArr)
+      objBlogArr.filter((item, i) => {
+        if(item.id == index){
+          return objBlogArr.splice(i, 1);
+        }
+        // return objBlogArr.splice(index, 1);
+      });
+      console.log(objBlogArr)
+      sessionStorage.setItem('blogs', JSON.stringify(objBlogArr));
+      fetchBlogs()
+    }
+
+    // view blog details
+
+    const viewBlog = (title, content, image) => {
+      document.querySelector('#viewtitle').innerHTML = title;
+      document.querySelector('#viewImage').innerHTML = `<img src="${image}" class="img img-fluid" />`;
+      document.querySelector('#viewContent').innerHTML = content;
+    }
+    // fectch blogs code
+    const fetchBlogs = () => {
+      let blogs = sessionStorage.getItem('blogs');
+      let objBlogArr = JSON.parse(blogs);
+      let htmlBlogs = '';
+      if(blogs !== undefined && blogs !== null) {
+        htmlBlogs += '<div class="row row-cols-2 row-cols-lg-4 g-2 g-lg-3">'
+        objBlogArr.map((item, i) => {
+          // console.log(item)
+          let contentData = item.content.length < 100 ? item.content : item.content.substr(0,100) + '...'
+          htmlBlogs += `
+            <div class="col">
+              <div class="card h-100">
+                <img src="${item.image}" alt="...">
+                <div class="card-body">
+                  <h5 class="card-title">${item.title}</h5>
+                  <p class="card-text">${contentData}</p>
+                </div>
+                <div class="card-footer bg-white border-0">
+                  <div class="text-end">
+                    <button type="button" data-bs-toggle="modal" data-bs-target="#viewBlogs" onclick="viewBlog('${item.title}','${item.content}','${item.image}')" title="Click to view full content" class="btn btn-sm btn-custom-outline-primary">View</button>
+                    <button type="button" onclick="editBlog(${item.id})" class="btn btn-sm btn-custom-outline-primary">Edit</button>
+                    <button type="button" onclick="deleteBlog(${item.id})" class="btn btn-sm btn-custom-outline-secondary">Delete</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `
+        });
+        htmlBlogs += '</div>'
+        document.querySelector('#blogsnote').innerHTML = htmlBlogs;
+      };
+    };
+    
+    window.onload = function(){
+      let createBlog = document.querySelector('#createBlog');
+      let create_form_ui = document.querySelector('#create_form_ui');
+      let blog_ui = document.querySelector('#blog_ui');
+      let cancel_post = document.querySelector('#cancel_post');
+
+      createBlog.addEventListener('click', function() {
+        create_form_ui.classList.remove('d-none');
+        blog_ui.classList.add('d-none');
+        isEdit = false;
+      });
+      cancel_post.addEventListener('click', function() {
+        create_form_ui.classList.add('d-none');
+        blog_ui.classList.remove('d-none');
+      });
+
+      fetchBlogs();
+    }
+    var uploadedFileURL;
+    const submitBlog = (event) => {
+      event.preventDefault();
+      let blogs = sessionStorage.getItem('blogs');
+      let objBlogArr = JSON.parse(blogs);
+      let objBlog = {
+        id: '',
+        title: '',
+        content: '',
+        image: ''
+      }
+      
+      if(title.value == ''){
+        title.classList.add('error');
+        title.focus();
+      } else if(content.value == '') {
+        content.classList.add('error');
+        content.focus();
+      } else {
+        if(objBlogArr !== null){
+          objBlog.id = objBlogArr.length + 1;
+        } else {
+          objBlog.id = 1;
+        }
+        objBlog.title = title.value;
+        objBlog.content = content.value;
+        // objBlog.image = window.URL.createObjectURL(image.files[0]);
+        objBlog.image = 'images/no_post.png';
+        if(isEdit) {
+          objBlogArr.filter((item, i) => {
+            if(item.id == selectId){
+              item.title = title.value;
+              item.content = content.value;
+              item.image = 'images/no_post.png';
+            }
+          });
+          sessionStorage.setItem('blogs',JSON.stringify(objBlogArr));
+          form_blog.reset();
+          loader.classList.remove('d-none');
+          setTimeout(() => {
+            fetchBlogs();
+            create_form_ui.classList.add('d-none');
+            blog_ui.classList.remove('d-none');
+            loader.classList.add('d-none');
+          }, 3000)
+        } else {
+          blogsArr.push(objBlog);
+          sessionStorage.setItem('blogs',JSON.stringify(blogsArr));
+          form_blog.reset();
+          loader.classList.remove('d-none');
+          setTimeout(() => {
+            fetchBlogs();
+            create_form_ui.classList.add('d-none');
+            blog_ui.classList.remove('d-none');
+            loader.classList.add('d-none');
+          }, 3000)
+        }
+        
+        
+      }
+    }
+  </script>
+</body>
+</html>
